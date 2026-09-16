@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Deals <a href="{{ url_for('deals.new') }}" role="button" style="float:right">+ Log a deal</a></h2>
+{% if deals %}
+<table>
+  <thead><tr><th>Brand</th><th>Fee</th><th>Status</th><th>Dates</th><th>Delivered</th><th>Reports</th></tr></thead>
+  <tbody>
+  {% for d in deals %}
+    <tr>
+      <td><a href="{{ url_for('deals.show', deal_id=d.id) }}">{{ d.brand_name }}</a></td>
+      <td>{{ d.fee | money(d.currency) }}</td>
+      <td>{{ d.status }}</td>
+      <td class="muted">{{ d.start_date or '' }}{% if d.end_date %} → {{ d.end_date }}{% endif %}</td>
+      <td>{{ d.attached_posts | length }} / {{ d.deliverables | length }}</td>
+      <td>{{ d.reports | length }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No deals yet.</p>
+{% endif %}
+{% endblock %}

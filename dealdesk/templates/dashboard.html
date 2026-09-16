@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dashboard</h2>
+
+<article>
+  <header><strong>Connected accounts</strong></header>
+  {% if accounts %}
+    <table>
+      <thead><tr><th>Platform</th><th>Account</th><th>Followers</th><th>Last synced</th><th></th></tr></thead>
+      <tbody>
+      {% for a in accounts %}
+        <tr>
+          <td>{{ a.platform }}</td>
+          <td>{{ a.display_name or a.handle }}</td>
+          <td>{{ a.follower_count | num }}</td>
+          <td class="muted">
+            {{ a.last_synced_at.strftime('%Y-%m-%d %H:%M') if a.last_synced_at else 'never' }}
+            {% if a.last_sync_error %}<br><small style="color:#b91c1c">{{ a.last_sync_error[:120] }}</small>{% endif %}
+          </td>
+          <td><form class="inline" method="post" action="{{ url_for('main.sync_now', account_id=a.id) }}">
+            <button class="secondary outline" style="padding:.2rem .6rem">Sync now</button></form></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No accounts yet. Connect one to start pulling your numbers.</p>
+  {% endif %}
+  <footer>
+    <a href="{{ url_for('youtube.connect') }}" role="button" class="outline">Connect YouTube</a>
+    <button disabled class="outline secondary" title="Week 4">Connect Instagram (soon)</button>
+  </footer>
+</article>
+
+<article>
+  <header><strong>Deals</strong> &nbsp; <a href="{{ url_for('deals.new') }}">+ Log a deal</a></header>
+  {% if deals %}
+    <table>
+      <thead><tr><th>Brand</th><th>Fee</th><th>Status</th><th>Delivered</th></tr></thead>
+      <tbody>
+      {% for d in deals %}
+        <tr>
+          <td><a href="{{ url_for('deals.show', deal_id=d.id) }}">{{ d.brand_name }}</a></td>
+          <td>{{ d.fee | money(d.currency) }}</td>
+          <td>{{ d.status }}</td>
+          <td>{{ d.attached_posts | length }} / {{ d.deliverables | length }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Your first deal is the whole point. <a href="{{ url_for('deals.new') }}">Log one</a> — it takes a minute.</p>
+  {% endif %}
+</article>
+
+{% if recent_posts %}
+<article>
+  <header><strong>Recent posts</strong></header>
+  <table>
+    <thead><tr><th></th><th>Title</th><th>Format</th><th>Published</th><th>Views</th><th>Eng.</th></tr></thead>
+    <tbody>
+    {% for p in recent_posts %}{% set m = p.latest_metrics %}
+      <tr>
+        <td>{% if p.thumbnail_url %}<img class="thumb" src="{{ p.thumbnail_url }}" alt="">{% endif %}</td>
+        <td><a href="{{ p.permalink }}" target="_blank" rel="noopener">{{ (p.title or p.permalink)[:70] }}</a></td>
+        <td>{{ p.format }}</td>
+        <td class="muted">{{ p.published_at.strftime('%Y-%m-%d') }}</td>
+        <td>{{ (m.views if m else None) | num }}</td>
+        <td>{{ (m.engagements if m else None) | num }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</article>
+{% endif %}
+{% endblock %}

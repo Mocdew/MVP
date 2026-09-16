@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{ r.deal.brand_name }} × {{ r.creator.name or 'Creator' }} — Sponsorship report</title>
+  <style>
+    body { font: 15px/1.5 -apple-system, Segoe UI, Roboto, sans-serif; color: #111; margin: 0; background: #fafafa; }
+    .page { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem; background: #fff; }
+    h1 { font-size: 1.6rem; margin: 0; } h2 { font-size: 1.1rem; margin: 2rem 0 .6rem; }
+    .muted { color: #666; } small { font-size: .85em; }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .stat { flex: 1 1 140px; background: #f4f4f5; border-radius: 8px; padding: .8rem 1rem; }
+    .stat strong { display: block; font-size: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { text-align: left; padding: .55rem .5rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    th { color: #555; font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+    .num { text-align: right; white-space: nowrap; }
+    .up { color: #047857; font-weight: 600; } .down { color: #b91c1c; font-weight: 600; }
+    .thumb { width: 84px; height: 47px; object-fit: cover; border-radius: 4px; }
+    .bar { background: #eef; padding: .6rem 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: .9rem; }
+    .foot { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: .8rem; color: #666; }
+    @media print { body { background: #fff } .bar { display: none } .page { padding: 0 } }
+  </style>
+</head>
+<body>
+<div class="page">
+  {% if is_owner and not pdf %}
+  <div class="bar">
+    You're viewing your own report. Share this link with the brand:
+    <code>{{ url_for('reports.share', token=report.share_token, _external=True) }}</code>
+    · <a href="{{ url_for('reports.share_pdf', token=report.share_token) }}">PDF</a>
+    · viewed {{ report.view_count }}×
+  </div>
+  {% endif %}
+
+  <header>
+    <small class="muted">Sponsorship performance report</small>
+    <h1>{{ r.deal.brand_name }} × {{ r.creator.name or 'Creator' }}</h1>
+    <p class="muted">
+      {% for a in r.creator.accounts %}{{ a.platform }} {{ a.handle or a.display_name }} ({{ a.follower_count | num }} followers){{ ' · ' if not loop.last }}{% endfor %}
+      {% if r.deal.start_date %}<br>{{ r.deal.start_date }}{% if r.deal.end_date %} → {{ r.deal.end_date }}{% endif %}{% endif %}
+      {% if r.deal.usage_terms %}<br>Usage: {{ r.deal.usage_terms }}{% endif %}
+    </p>
+  </header>
+
+  <h2>Summary</h2>
+  <div class="row">
+    <div class="stat"><small class="muted">Deliverables</small><strong>{{ r.summary.deliverables_delivered }} / {{ r.summary.deliverables_total }}</strong></div>
+    <div class="stat"><small class="muted">Total views</small><strong>{{ r.summary.total_views | num }}</strong></div>
+    <div class="stat"><small class="muted">Total engagements</small><strong>{{ r.summary.total_engagements | num }}</strong></div>
+    <div class="stat"><small class="muted">Effective CPM</small><strong>{{ r.deal.currency }} {{ r.summary.cpm if r.summary.cpm is not none else '—' }}</strong></div>
+    <div class="stat"><small class="muted">Cost per engagement</small><strong>{{ r.deal.currency }} {{ r.summary.cost_per_engagement if r.summary.cost_per_engagement is not none else '—' }}</strong></div>
+  </div>
+
+  <h2>Deliverables</h2>
+  <table>
+    <thead><tr><th></th><th>Content</th><th class="num">Views</th><th class="num">Eng.</th><th class="num">Eng. rate</th><th class="num">vs. baseline</th></tr></thead>
+    <tbody>
+    {% for d in r.deliverables %}
+      <tr>
+        <td>{% if d.post and d.post.thumbnail_url %}<img class="thumb" src="{{ d.post.thumbnail_url }}" alt="">{% endif %}</td>
+        <td>
+          <strong>{{ d.deliverable }}</strong>
+          {% if d.post %}
+            <br><a href="{{ d.post.permalink }}">{{ (d.post.title or d.post.permalink)[:70] }}</a>
+            <br><small class="muted">{{ d.post.platform }} {{ d.post.format }} · {{ d.post.published_at[:10] }}</small>
+          {% else %}
+            <br><small class="muted">Not yet delivered</small>
+          {% endif %}
+        </td>
+        {% if d.post %}
+          <td class="num">{{ d.post.views | num }}</td>
+          <td class="num">{{ d.post.engagements | num }}</td>
+          <td class="num">{{ d.post.engagement_rate ~ '%' if d.post.engagement_rate is not none else '—' }}</td>
+          <td class="num">
+            {% set l = d.lift.views_pct %}
+            {% if l is none %}<span class="muted">n/a</span>
+            {% else %}<span class="{{ 'up' if l >= 0 else 'down' }}">{{ '+' if l >= 0 }}{{ l }}%</span>
+              <br><small class="muted">views vs. median of {{ d.baseline.n }} organic {{ d.post.format }}s</small>
+            {% endif %}
+          </td>
+        {% else %}
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="foot">
+    <p><strong>How this is calculated.</strong> {{ r.methodology }}</p>
+    <p>Generated {{ r.generated_at[:16].replace('T', ' ') }} UTC · Deal Desk</p>
+  </div>
+</div>
+</body>
+</html>

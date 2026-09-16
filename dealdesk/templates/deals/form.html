@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ 'Edit deal' if deal else 'Log a deal' }}</h2>
+<form method="post">
+  <label>Brand
+    <input name="brand_name" required value="{{ deal.brand_name if deal else '' }}" placeholder="e.g. Glossier">
+  </label>
+  <div class="grid">
+    <label>Fee
+      <input name="fee" type="number" step="0.01" min="0" value="{{ '%.2f' % deal.fee if deal else '' }}" placeholder="3000">
+    </label>
+    <label>Currency
+      <input name="currency" maxlength="3" value="{{ deal.currency if deal else 'USD' }}">
+    </label>
+    {% if deal %}
+    <label>Status
+      <select name="status">
+        {% for s in ['draft','active','delivered','paid'] %}
+          <option value="{{ s }}" {{ 'selected' if deal.status == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endif %}
+  </div>
+  <div class="grid">
+    <label>Start date <input name="start_date" type="date" value="{{ deal.start_date or '' if deal else '' }}"></label>
+    <label>End date <input name="end_date" type="date" value="{{ deal.end_date or '' if deal else '' }}"></label>
+  </div>
+  <label>Usage terms
+    <input name="usage_terms" value="{{ deal.usage_terms or '' if deal else '' }}" placeholder="e.g. 6 months paid usage, organic only">
+  </label>
+  {% if not deal %}
+  <label>Deliverables <small class="muted">— one per line</small>
+    <textarea name="deliverables" rows="4" placeholder="1x YouTube integration (60s)&#10;2x Instagram reels&#10;1x story set"></textarea>
+  </label>
+  {% endif %}
+  <label>Notes <textarea name="notes" rows="3">{{ deal.notes or '' if deal else '' }}</textarea></label>
+  <button type="submit">{{ 'Save' if deal else 'Log deal' }}</button>
+</form>
+{% endblock %}

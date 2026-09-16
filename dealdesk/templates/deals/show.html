@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<hgroup>
+  <h2>{{ deal.brand_name }}</h2>
+  <p>{{ deal.fee | money(deal.currency) }} · {{ deal.status }}
+     {% if deal.start_date %}· {{ deal.start_date }}{% if deal.end_date %} → {{ deal.end_date }}{% endif %}{% endif %}
+     &nbsp; <a href="{{ url_for('deals.edit', deal_id=deal.id) }}">edit</a></p>
+</hgroup>
+{% if deal.usage_terms %}<p><small class="muted">Usage: {{ deal.usage_terms }}</small></p>{% endif %}
+
+<article>
+  <header><strong>Deliverables</strong> — {{ deal.attached_posts | length }} of {{ deal.deliverables | length }} delivered</header>
+  {% for d in deal.deliverables %}
+    <div style="display:flex; gap:1rem; align-items:center; padding:.5rem 0; border-bottom:1px solid var(--pico-muted-border-color)">
+      <span class="pill {{ d.status }}">{{ d.status }}</span>
+      <div style="flex:1">
+        <strong>{{ d.description }}</strong>{% if d.due_date %} <small class="muted">due {{ d.due_date }}</small>{% endif %}
+        {% if d.post %}
+          <br><small><a href="{{ d.post.permalink }}" target="_blank" rel="noopener">{{ (d.post.title or d.post.permalink)[:80] }}</a>
+          {% set m = d.post.latest_metrics %}{% if m %}· {{ m.views | num }} views · {{ m.engagements | num }} eng.{% endif %}</small>
+        {% endif %}
+      </div>
+      {% if d.post %}
+        <form class="inline" method="post" action="{{ url_for('deals.detach', deal_id=deal.id, d_id=d.id) }}">
+          <button class="secondary outline" style="padding:.2rem .6rem">Detach</button></form>
+      {% else %}
+        <form class="inline" method="post" action="{{ url_for('deals.attach', deal_id=deal.id, d_id=d.id) }}" style="display:flex; gap:.4rem">
+          <input name="url" placeholder="Paste the post link" required style="margin:0; width:18rem">
+          <button style="padding:.2rem .8rem; margin:0">Attach</button></form>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="muted">No deliverables yet.</p>
+  {% endfor %}
+  <footer>
+    <form method="post" action="{{ url_for('deals.add_deliverable', deal_id=deal.id) }}" class="grid">
+      <input name="description" placeholder="Add a deliverable, e.g. 1x reel" required>
+      <input name="due_date" type="date">
+      <button class="outline">Add</button>
+    </form>
+  </footer>
+</article>
+
+<article>
+  <header><strong>Reports</strong></header>
+  {% if deal.attached_posts %}
+    <form method="post" action="{{ url_for('reports.generate', deal_id=deal.id) }}">
+      <button>Generate report</button>
+      <small class="muted">Freezes today's numbers into a shareable link.</small>
+    </form>
+  {% else %}
+    <p class="muted">Attach at least one post to generate a report.</p>
+  {% endif %}
+  {% for r in deal.reports %}
+    <p>
+      <a href="{{ url_for('reports.share', token=r.share_token) }}">Report from {{ r.generated_at.strftime('%Y-%m-%d %H:%M') }}</a>
+      <small class="muted">· viewed {{ r.view_count }}×</small>
+      · <a href="{{ url_for('reports.share_pdf', token=r.share_token) }}">PDF</a>
+    </p>
+  {% endfor %}
+</article>
+
+<form method="post" action="{{ url_for('deals.delete', deal_id=deal.id) }}" onsubmit="return confirm('Delete this deal and its reports?')">
+  <button class="secondary outline">Delete deal</button>
+</form>
+{% endblock %}
